@@ -11,7 +11,7 @@ import SceneKit
 
 class ViewController: UIViewController {
 
-    let irisTracker = IrisTracker()!
+    let irisTracker = MPPIrisTracker()!
     let cameraFacing: AVCaptureDevice.Position = .front
     let session = AVCaptureSession()
     let videoQueue = DispatchQueue(label: "videoQueue", qos: .userInitiated, attributes: [], autoreleaseFrequency: .workItem)
@@ -50,7 +50,7 @@ class ViewController: UIViewController {
         }
         
         let cameraInput = try! AVCaptureDeviceInput(device: camera)
-        session.sessionPreset = .hd1280x720
+        session.sessionPreset = .hd1920x1080
         session.addInput(cameraInput)
 
         let videoOutput = AVCaptureVideoDataOutput()
@@ -85,13 +85,16 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
         autoreleasepool { // Redundent autorelease?
             guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
             
-            irisTracker.processVideoFrame(imageBuffer)
+            let timestamp = CMSampleBufferGetOutputPresentationTimeStamp(sampleBuffer)
+            
+            irisTracker.processVideoFrame(imageBuffer, timestamp: timestamp)
         }
     }
+
 }
 
-extension ViewController: IrisTrackerDelegate {
-    func irisTracker(_ irisTracker: IrisTracker, didOutputPixelBuffer pixelBuffer: CVPixelBuffer) {
+extension ViewController: MPPIrisTrackerDelegate {
+    func irisTracker(_ irisTracker: MPPIrisTracker, didOutputPixelBuffer pixelBuffer: CVPixelBuffer) {
         DispatchQueue.main.async { [unowned self] in
             scene.background.contents = processPixelBuffer(pixelBuffer: pixelBuffer)
         }

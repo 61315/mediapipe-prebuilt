@@ -13,8 +13,8 @@
 		B5CF5001266613C200B9431B /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B5CF4FFF266613C200B9431B /* Main.storyboard */; };
 		B5CF5003266613C300B9431B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B5CF5002266613C300B9431B /* Assets.xcassets */; };
 		B5CF5006266613C300B9431B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B5CF5004266613C300B9431B /* LaunchScreen.storyboard */; };
-		B5CF501B26665E2C00B9431B /* MPPIrisGPUiOS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5CF501A26665E2C00B9431B /* MPPIrisGPUiOS.framework */; };
-		B5CF501C26665E2C00B9431B /* MPPIrisGPUiOS.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B5CF501A26665E2C00B9431B /* MPPIrisGPUiOS.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		B5CF507B2668C1E800B9431B /* MPPIrisTracking.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5CF507A2668C1E800B9431B /* MPPIrisTracking.framework */; };
+		B5CF507C2668C1E800B9431B /* MPPIrisTracking.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B5CF507A2668C1E800B9431B /* MPPIrisTracking.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,7 +24,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				B5CF501C26665E2C00B9431B /* MPPIrisGPUiOS.framework in Embed Frameworks */,
+				B5CF507C2668C1E800B9431B /* MPPIrisTracking.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -41,8 +41,8 @@
 		B5CF5005266613C300B9431B /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		B5CF5007266613C300B9431B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5CF50132666152700B9431B /* Iris-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Iris-Bridging-Header.h"; sourceTree = "<group>"; };
-		B5CF501A26665E2C00B9431B /* MPPIrisGPUiOS.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = MPPIrisGPUiOS.framework; sourceTree = "<group>"; };
 		B5CF501D26666D9100B9431B /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		B5CF507A2668C1E800B9431B /* MPPIrisTracking.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = MPPIrisTracking.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -50,7 +50,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B5CF501B26665E2C00B9431B /* MPPIrisGPUiOS.framework in Frameworks */,
+				B5CF507B2668C1E800B9431B /* MPPIrisTracking.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -93,7 +93,7 @@
 		B5CF500E2666145500B9431B /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				B5CF501A26665E2C00B9431B /* MPPIrisGPUiOS.framework */,
+				B5CF507A2668C1E800B9431B /* MPPIrisTracking.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
