@@ -76,6 +76,8 @@ message OneEuroFilter {
 
 ### Pose estimation
 
+![pose-estimation](https://user-images.githubusercontent.com/46559594/121180607-fe7ca600-c89b-11eb-94c0-4239b6f0cd6f.gif)
+
 **TODO**
 
 ### Build MediaPipe project as a framework

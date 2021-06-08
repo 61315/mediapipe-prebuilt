@@ -14,13 +14,28 @@ class ViewController: UIViewController {
     let irisTracker = MPPIrisTracker()!
     let cameraFacing: AVCaptureDevice.Position = .front
     let session = AVCaptureSession()
-    let videoQueue = DispatchQueue(label: "videoQueue", qos: .userInitiated, attributes: [], autoreleaseFrequency: .workItem)
+    let videoQueue = DispatchQueue(label: "com.wwdc21.was.cool.videoQueue", qos: .userInitiated, attributes: [], autoreleaseFrequency: .workItem)
     var backgroundTextureCache: CVMetalTextureCache!
     let metalDevice = MTLCreateSystemDefaultDevice()!
     let scene = SCNScene()
+    let originNode = SCNNode(geometry: SCNBox(width: 15, height: 15, length: 15, chamferRadius: 0))
+    //let originNode = SCNNode(geometry: SCNSphere(radius: 10)) // lol
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // Reasoning from:
+        // https://github.com/google/mediapipe/blob/ecb5b5f44ab23ea620ef97a479407c699e424aa7/mediapipe/graphs/face_effect/face_effect_gpu.pbtxt#L62-L64
+        let camera = SCNCamera()
+        camera.zNear = 1.0
+        camera.zFar = 10000.0
+        //camera.yFov = 63.0
+        
+        let cameraNode = SCNNode()
+        cameraNode.camera = camera
+        
+        scene.rootNode.addChildNode(cameraNode)
+        scene.rootNode.addChildNode(originNode)
         
         let sceneView = SCNView()
         sceneView.scene = scene
@@ -82,7 +97,8 @@ class ViewController: UIViewController {
 
 extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        autoreleasepool { // Redundent autorelease?
+        // Redundent autorelease?
+        autoreleasepool {
             guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
             
             let timestamp = CMSampleBufferGetOutputPresentationTimeStamp(sampleBuffer)
@@ -90,13 +106,26 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
             irisTracker.processVideoFrame(imageBuffer, timestamp: timestamp)
         }
     }
-
 }
 
 extension ViewController: MPPIrisTrackerDelegate {
+    func irisTracker(_ irisTracker: MPPIrisTracker, didOutputTransform transform: simd_float4x4) {
+        // Apply the transform matrix as-is to the SCNNode, given that the naming
+        // conventions of simd_float4x4 and SCNMatrix4 suggest they're both column-majored.
+        originNode.simdTransform = transform
+        
+        // You can access the position/orientation values now as they're
+        // just different representations of the above transform matrix or so.
+        // https://www.songho.ca/opengl/gl_anglestoaxes.html
+        print("pos: \(originNode.simdPosition) rot: \(originNode.simdEulerAngles)")
+    }
+    
     func irisTracker(_ irisTracker: MPPIrisTracker, didOutputPixelBuffer pixelBuffer: CVPixelBuffer) {
         DispatchQueue.main.async { [unowned self] in
             scene.background.contents = processPixelBuffer(pixelBuffer: pixelBuffer)
+            
+            // This makes the cool effect
+            originNode.geometry?.firstMaterial?.diffuse.contents = scene.background.contents
         }
     }
 }
