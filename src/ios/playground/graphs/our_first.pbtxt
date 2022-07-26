@@ -1,0 +1,13 @@
+# MediaPipe graph that performs arbitrary image manipulations on a live video stream.
+# Used in the examples in mediapipe/examples/ios/prebuilt/playground.
+
+# Images coming into and out of the graph.
+input_stream: "input_video"
+output_stream: "output_video"
+
+# Converts RGB images into luminance images, still stored in RGB format.
+node: {
+  calculator: "PassThroughCalculator"
+  input_stream: "input_video"
+  output_stream: "output_video"
+}
