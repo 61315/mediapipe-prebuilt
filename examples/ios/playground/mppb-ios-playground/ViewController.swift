@@ -13,6 +13,7 @@ class ViewController: UIViewController {
 
     let tracker = MPPBPlayground(string: ViewController.OUR_SECOND_CALCULATORS)!
 //    let tracker = MPPBPlayground()!
+    
     let cameraFacing: AVCaptureDevice.Position = .front
     let session = AVCaptureSession()
     let videoQueue = DispatchQueue(label: "com.mediapipe.prebuilt.example.videoQueue", qos: .userInitiated, attributes: [], autoreleaseFrequency: .workItem)
@@ -130,7 +131,7 @@ extension ViewController {
     }
     
     /**
-        Available calculators in this bundle or framework):
+        Available calculators in this bundle or framework:
         "//mediapipe/calculators/core:flow_limiter_calculator",
         "//mediapipe/calculators/core:pass_through_calculator",
         "//mediapipe/calculators/image:color_convert_calculator",
@@ -139,7 +140,7 @@ extension ViewController {
  
     @See mediapipe/examples/ios/prebuilt/playground/graph/BUILD
      */
-    private static let OUR_SECOND_CALCULATORS = """
+    fileprivate static let OUR_SECOND_CALCULATORS = """
 input_stream: "input_video"
 output_stream: "output_video"
 
