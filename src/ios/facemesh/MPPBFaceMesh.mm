@@ -1,17 +1,15 @@
 #import "MPPBFaceMesh.h"
 #import "mediapipe/objc/MPPGraph.h"
-#import "mediapipe/objc/MPPCameraInputSource.h"
-// #import "mediapipe/objc/MPPLayerRenderer.h"
+
 #include "mediapipe/framework/formats/landmark.pb.h"
 
-static NSString* const kGraphName = @"face_mesh_mobile_gpu";
+static NSString* const kGraphName = @"custom_face_mesh_ios";
 
 static const char* kInputStream = "input_video";
 static const char* kOutputStream = "output_video";
 
 static const char* kNumFacesInputSidePacket = "num_faces";
-static const char* kLandmarksOutputStream = "multi_face_landmarks";
-static const char* kVideoQueueLabel = "com.mediapipe.prebuilt.example.videoQueue";
+static const char* kLandmarksOutputStream = "multi_smoothed_face_landmarks";
 
 // Max number of faces to detect/process.
 static const int kNumFaces = 1;

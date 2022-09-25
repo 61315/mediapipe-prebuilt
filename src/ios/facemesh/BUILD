@@ -25,9 +25,9 @@ objc_library(
     ],
     copts = ["-std=c++17"],
     data = [
-        "//mediapipe/graphs/face_mesh:face_mesh_mobile_gpu.binarypb",
         "//mediapipe/modules/face_detection:face_detection_short_range.tflite",
         "//mediapipe/modules/face_landmark:face_landmark_with_attention.tflite",
+        "//mediapipe/examples/ios/prebuilt/facemesh/graphs:custom_face_mesh_ios.binarypb",
     ],
     sdk_frameworks = [
         "AVFoundation",
@@ -37,13 +37,11 @@ objc_library(
     ],
     deps = [
         "//mediapipe/objc:mediapipe_framework_ios",
-        "//mediapipe/objc:mediapipe_input_sources_ios",
-        #"//mediapipe/objc:mediapipe_layer_renderer",
     ] + select({
         "//mediapipe:ios_i386": [],
         "//mediapipe:ios_x86_64": [],
         "//conditions:default": [
-            "//mediapipe/graphs/face_mesh:mobile_calculators",
+            "//mediapipe/examples/ios/prebuilt/facemesh/graphs:custom_face_mesh_ios_calculators",
             "//mediapipe/framework/formats:landmark_cc_proto",
         ],
     }),
