@@ -9,6 +9,7 @@
 @protocol MPPBFaceGeometryDelegate <NSObject>
 - (void)tracker: (MPPBFaceGeometry *)tracker didOutputPixelBuffer: (CVPixelBufferRef)pixelBuffer;
 - (void)tracker: (MPPBFaceGeometry *)tracker didOutputTransform: (simd_float4x4)transform withFace: (NSInteger)index;
+- (void)tracker: (MPPBFaceGeometry *)tracker didOutputGeometry: (NSArray<NSNumber *> *)indices withVertices: (NSArray<NSNumber *> *)vertices withFace: (NSInteger)index;
 @end
 
 @interface MPPBFaceGeometry : NSObject

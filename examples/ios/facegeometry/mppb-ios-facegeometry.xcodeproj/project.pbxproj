@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B58FA74D2959B38B00FEA336 /* uvgrid.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = B58FA74C2959B38B00FEA336 /* uvgrid.jpeg */; };
 		B592408828910397007C184E /* MPPBFaceGeometry.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B592408728910397007C184E /* MPPBFaceGeometry.framework */; };
 		B592408928910397007C184E /* MPPBFaceGeometry.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B592408728910397007C184E /* MPPBFaceGeometry.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		B5B6D729288EC24600461CA8 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B5B6D728288EC24600461CA8 /* LaunchScreen.storyboard */; };
@@ -30,6 +31,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B58FA74C2959B38B00FEA336 /* uvgrid.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = uvgrid.jpeg; sourceTree = "<group>"; };
 		B592408728910397007C184E /* MPPBFaceGeometry.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = MPPBFaceGeometry.framework; sourceTree = "<group>"; };
 		B5B6D728288EC24600461CA8 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		B5CF4FF6266613C200B9431B /* mppb-ios-facegeometry.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "mppb-ios-facegeometry.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -72,6 +74,7 @@
 		B5CF4FF8266613C200B9431B /* mppb-ios-facegeometry */ = {
 			isa = PBXGroup;
 			children = (
+				B58FA74C2959B38B00FEA336 /* uvgrid.jpeg */,
 				B5CF4FF9266613C200B9431B /* AppDelegate.swift */,
 				B5CF4FFD266613C200B9431B /* ViewController.swift */,
 				B5CF5002266613C300B9431B /* Assets.xcassets */,
@@ -149,6 +152,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B5B6D729288EC24600461CA8 /* LaunchScreen.storyboard in Resources */,
+				B58FA74D2959B38B00FEA336 /* uvgrid.jpeg in Resources */,
 				B5CF5003266613C300B9431B /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

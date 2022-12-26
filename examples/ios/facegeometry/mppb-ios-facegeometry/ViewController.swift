@@ -11,16 +11,20 @@ import SceneKit
 
 class ViewController: UIViewController {
 
-//    let tracker = MPPBFaceGeometry(string: ViewController.FACE_GEOMETRY_WITH_TRANSFORM_CALCULATORS_SOURCE)!
-    let tracker = MPPBFaceGeometry()!
+    // let tracker = MPPBFaceGeometry()!
+    let tracker = MPPBFaceGeometry(string: ViewController.FACE_GEOMETRY_WITH_TRANSFORM_CALCULATORS_SOURCE)!
     
-    let cameraFacing: AVCaptureDevice.Position = .front
+    let metalDevice = MTLCreateSystemDefaultDevice()!
+    var backgroundTextureCache: CVMetalTextureCache!
+    
     let session = AVCaptureSession()
     let videoQueue = DispatchQueue(label: "com.mediapipe.prebuilt.example.videoQueue", qos: .userInitiated, attributes: [], autoreleaseFrequency: .workItem)
-    var backgroundTextureCache: CVMetalTextureCache!
-    let metalDevice = MTLCreateSystemDefaultDevice()!
+    let cameraFacing: AVCaptureDevice.Position = .front
+    var aspectRatio: Float = 1.0
+    
     let scene = SCNScene()
-    let originNode = SCNNode(geometry: SCNBox(width: 15, height: 15, length: 15, chamferRadius: 0))
+    let transformNode = SCNNode()
+    let faceNode = SCNNode()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -38,19 +42,21 @@ class ViewController: UIViewController {
         let camera = SCNCamera()
         camera.zNear = 1.0
         camera.zFar = 10000.0
-        //camera.yFov = 63.0
+        camera.fieldOfView = 63.0 // fieldOfView matters
         
         let cameraNode = SCNNode()
         cameraNode.camera = camera
         
         scene.rootNode.addChildNode(cameraNode)
-        scene.rootNode.addChildNode(originNode)
+        scene.rootNode.addChildNode(transformNode)
+        transformNode.addChildNode(faceNode)
         
         let sceneView = SCNView()
         sceneView.scene = scene
         sceneView.frame = view.frame
         sceneView.rendersContinuously = true
         sceneView.showsStatistics = true
+        sceneView.debugOptions = [.showBoundingBoxes, .showWireframe]
         view.addSubview(sceneView)
         
         if CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, metalDevice, nil, &backgroundTextureCache) != kCVReturnSuccess {
@@ -88,11 +94,10 @@ class ViewController: UIViewController {
         let screenHeight = Float(UIScreen.main.bounds.height)
         
         // Aspect fit for the background texture
-        let aspectRatio: Float = (screenHeight * videoWidth) / (screenWidth * videoHeight)
-        let transform = aspectRatio >= 1.0 ? SCNMatrix4MakeScale(1, aspectRatio, 1) : SCNMatrix4MakeScale(1 / aspectRatio, 1, 1)
-
-        // Equivalent to setting vertex position to match aspect ratio
-        scene.background.contentsTransform = transform
+        aspectRatio = (screenHeight * videoWidth) / (screenWidth * videoHeight)
+        let videoTransform = aspectRatio < 1.0 ? SCNMatrix4MakeScale(1, aspectRatio, 1) : SCNMatrix4MakeScale(1 / aspectRatio, 1, 1)
+        
+        scene.background.contentsTransform = videoTransform
         scene.background.wrapS = .clampToBorder
         scene.background.wrapT = .clampToBorder
     }
@@ -110,21 +115,46 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
 }
 
 extension ViewController: MPPBFaceGeometryDelegate {
-    func tracker(_ tracker: MPPBFaceGeometry!, didOutputTransform transform: simd_float4x4, withFace index: Int) {
-        // The matrix is col-majored
-        originNode.simdTransform = transform
+    /*
+     We get 468 vertices from 468 face landmarks.
+     A vertex is defined by 5 coordinates: Position (XYZ) + Texture coordinate (UV)
+     making it an array of 2340 floats. [XYZUV(5) * 468]
+     
+     e.g.
+     typedef struct {
+         float x, y, z;    // position
+         float u, v;       // texture coordinates
+     } vertex;
+     
+     vertex vertices[468]; // or `float vertices[2340];`
+     uint32_t indices[2694];
+     */
+    func tracker(_ tracker: MPPBFaceGeometry!, didOutputGeometry indices: [NSNumber]!, withVertices vertices: [NSNumber]!, withFace index: Int) {
+        // TODO: Use MTLBuffer
+        let vertexData = vertices.map { $0.floatValue }.withUnsafeBufferPointer { Data(buffer: $0) }
         
-        // This callback demonstrates how the output face geometry packet can be obtained and used in an
-        // iOS app. As an example, the Z-translation component of the face pose transform matrix is logged
-        // for each face being equal to the approximate distance away from the camera in centimeters.
-        print("Approx. distance away from camera for face\(index): \(-transform.columns.3.z) cm");
-        print("pos: \(originNode.simdPosition) rot: \(originNode.simdEulerAngles)")
+        // See https://developer.apple.com/documentation/scenekit/scngeometrysource
+        let vertexSource = SCNGeometrySource(data: vertexData, semantic: .vertex, vectorCount: vertices.count / 5, usesFloatComponents: true, componentsPerVector: 3, bytesPerComponent: MemoryLayout<Float>.size, dataOffset: MemoryLayout<Float>.stride * 0, dataStride: MemoryLayout<Float>.size * 5)
+        let uvSource = SCNGeometrySource(data: vertexData, semantic: .texcoord, vectorCount: vertices.count / 5, usesFloatComponents: true, componentsPerVector: 2, bytesPerComponent: MemoryLayout<Float>.size, dataOffset: MemoryLayout<Float>.stride * 3, dataStride: MemoryLayout<Float>.size * 5)
+      
+        let indexData = indices.map { $0.uint32Value }.withUnsafeBufferPointer { Data(buffer: $0) }
+        let indexSource = SCNGeometryElement(data: indexData, primitiveType: .triangles, primitiveCount: indices.count / 3, bytesPerIndex: MemoryLayout<UInt32>.size)
+        
+        let faceGeometry = SCNGeometry(sources: [vertexSource, uvSource], elements: [indexSource])
+        faceGeometry.firstMaterial?.diffuse.contents = UIImage(named: "uvgrid.jpeg") // WARNING: You do not want to bind texture every frame
+        
+        faceNode.geometry = faceGeometry
     }
     
+    // Update transform
+    func tracker(_ tracker: MPPBFaceGeometry!, didOutputTransform transform: simd_float4x4, withFace index: Int) {
+        transformNode.simdTransform = transform
+    }
+    
+    // Update video texture
     func tracker(_ tracker: MPPBFaceGeometry!, didOutputPixelBuffer pixelBuffer: CVPixelBuffer) {
         DispatchQueue.main.async { [unowned self] in
             scene.background.contents = processPixelBuffer(pixelBuffer: pixelBuffer)
-            originNode.geometry?.firstMaterial?.diffuse.contents = scene.background.contents
         }
     }
 }
