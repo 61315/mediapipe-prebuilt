@@ -158,6 +158,18 @@ static const char* kMultiFaceGeometryStream = "multi_face_geometry";
             );
             
             [_delegate tracker: self didOutputTransform: matrix withFace: faceIndex];
+
+            NSMutableArray *indices = [NSMutableArray arrayWithCapacity:faceGeometry.mesh().index_buffer_size()];
+            for (int i = 0; i < faceGeometry.mesh().index_buffer_size(); ++i) {
+                [indices addObject:[NSNumber numberWithInteger:faceGeometry.mesh().index_buffer(i)]];
+            }
+            
+            NSMutableArray *vertices = [NSMutableArray arrayWithCapacity:faceGeometry.mesh().vertex_buffer_size()];
+            for (int i = 0; i < faceGeometry.mesh().vertex_buffer_size(); ++i) {
+                [vertices addObject:[NSNumber numberWithFloat:faceGeometry.mesh().vertex_buffer(i)]];
+            }
+
+            [_delegate tracker: self didOutputGeometry: indices withVertices: vertices withFace: faceIndex];
         }
     }
 }

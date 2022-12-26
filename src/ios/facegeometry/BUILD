@@ -11,7 +11,7 @@ ios_framework(
     infoplists = ["Info.plist"],
     bundle_id = "com.mediapipe.prebuilt.facegeometry",
     families = ["iphone", "ipad"],
-    minimum_os_version = "12.0",
+    minimum_os_version = "13.0",
     deps = [
         ":MPPBFaceGeometryFramework",
         "@ios_opencv//:OpencvFramework",
