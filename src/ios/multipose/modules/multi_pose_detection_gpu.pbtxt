@@ -1,0 +1,117 @@
+# "ios/prebuilt/multipose/modules/multi_pose_detection_gpu.pbtxt"
+# https://github.com/61315/mediapipe-prebuilt/tree/master/src/ios/multipose/
+#
+# MediaPipe graph to detect poses. (GPU input, and inference is executed on
+# GPU.)
+
+type: "MultiPoseDetectionGpu"
+
+input_stream: "IMAGE:image"
+
+output_stream: "DETECTIONS:detections"
+
+node: {
+  calculator: "ImageToTensorCalculator"
+  input_stream: "IMAGE_GPU:image"
+  output_stream: "TENSORS:input_tensors"
+  output_stream: "LETTERBOX_PADDING:letterbox_padding"
+  options: {
+    [mediapipe.ImageToTensorCalculatorOptions.ext] {
+      output_tensor_width: 224
+      output_tensor_height: 224
+      keep_aspect_ratio: true
+      output_tensor_float_range {
+        min: -1.0
+        max: 1.0
+      }
+      border_mode: BORDER_ZERO
+      gpu_origin: TOP_LEFT
+    }
+  }
+}
+
+node {
+  calculator: "InferenceCalculator"
+  input_stream: "TENSORS:input_tensors"
+  output_stream: "TENSORS:detection_tensors"
+  options: {
+    [mediapipe.InferenceCalculatorOptions.ext] {
+      model_path: "mediapipe/modules/pose_detection/pose_detection.tflite"
+      delegate: { gpu { use_advanced_gpu_api: true } }
+    }
+  }
+}
+
+node {
+  calculator: "SsdAnchorsCalculator"
+  output_side_packet: "anchors"
+  options: {
+    [mediapipe.SsdAnchorsCalculatorOptions.ext] {
+      num_layers: 5
+      min_scale: 0.1484375
+      max_scale: 0.75
+      input_size_height: 224
+      input_size_width: 224
+      anchor_offset_x: 0.5
+      anchor_offset_y: 0.5
+      strides: 8
+      strides: 16
+      strides: 32
+      strides: 32
+      strides: 32
+      aspect_ratios: 1.0
+      fixed_anchor_size: true
+    }
+  }
+}
+
+node {
+  calculator: "TensorsToDetectionsCalculator"
+  input_stream: "TENSORS:detection_tensors"
+  input_side_packet: "ANCHORS:anchors"
+  output_stream: "DETECTIONS:unfiltered_detections"
+  options: {
+    [mediapipe.TensorsToDetectionsCalculatorOptions.ext] {
+      num_classes: 1
+      num_boxes: 2254
+      num_coords: 12
+      box_coord_offset: 0
+      keypoint_coord_offset: 4
+      num_keypoints: 4
+      num_values_per_keypoint: 2
+      sigmoid_score: true
+      score_clipping_thresh: 100.0
+      reverse_output_order: true
+      x_scale: 224.0
+      y_scale: 224.0
+      h_scale: 224.0
+      w_scale: 224.0
+      min_score_thresh: 0.15
+      max_results: 50
+    }
+  }
+}
+
+node {
+  calculator: "NonMaxSuppressionCalculator"
+  input_stream: "unfiltered_detections"
+  output_stream: "filtered_detections"
+  options: {
+    [mediapipe.NonMaxSuppressionCalculatorOptions.ext] {
+      min_suppression_threshold: 0.35
+      max_num_detections: 2
+      overlap_type: JACCARD
+      # overlap_type: MODIFIED_JACCARD
+      # overlap_type: INTERSECTION_OVER_UNION
+      # algorithm: DEFAULT
+      algorithm: WEIGHTED
+    }
+  }
+}
+
+node {
+  calculator: "DetectionLetterboxRemovalCalculator"
+  input_stream: "DETECTIONS:filtered_detections"
+  input_stream: "LETTERBOX_PADDING:letterbox_padding"
+  output_stream: "DETECTIONS:detections"
+}

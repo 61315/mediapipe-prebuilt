@@ -1,0 +1,54 @@
+# "ios/prebuilt/multipose/graphs/multi_pose_tracking_gpu.pbtxt"
+# https://github.com/61315/mediapipe-prebuilt/tree/master/src/ios/multipose/
+#
+# MediaPipe graph that performs multiple instances of pose tracking 
+# with TensorFlow Lite on GPU.
+#
+# NOTE: Please do note this is not an intended use case of the pose landmarks
+# model. As stated by @ivan-grishchenko, this graph does not guarantee the same
+# quality as the original implementation. I gave it a little more generous IOU 
+# threshold for the non-maximum suppression calculator and performed landmarks 
+# prediction on each cropped image.
+#
+# See: https://github.com/google/mediapipe/issues/1691#issuecomment-797159603
+#
+# It is required that "pose_detection.tflite" and 
+# "pose_landmark_{lite|full|heavy}.tflite" are available at
+# "mediapipe/modules/pose_detection/pose_detection.tflite" and
+# "mediapipe/modules/pose_landmark/pose_landmark_{lite|full|heavy}.tflite"
+# path respectively during execution.
+
+input_stream: "input_video"
+
+output_stream: "output_video"
+
+output_stream: "pose_detections"
+
+node {
+  calculator: "FlowLimiterCalculator"
+  input_stream: "input_video"
+  input_stream: "FINISHED:output_video"
+  input_stream_info: {
+    tag_index: "FINISHED"
+    back_edge: true
+  }
+  output_stream: "throttled_input_video"
+}
+
+node {
+  calculator: "MultiPoseLandmarkGpu"
+  input_stream: "IMAGE:throttled_input_video"
+  output_stream: "DETECTIONS:pose_detections"
+  output_stream: "detections_render_data"
+  output_stream: "roi_render_data_list"
+  output_stream: "landmarks_render_data_list"
+}
+
+node {
+  calculator: "AnnotationOverlayCalculator"
+  input_stream: "IMAGE_GPU:throttled_input_video"
+  input_stream: "detections_render_data"
+  input_stream: "VECTOR:0:roi_render_data_list"
+  input_stream: "VECTOR:1:landmarks_render_data_list"
+  output_stream: "IMAGE_GPU:output_video"
+}

@@ -1,0 +1,39 @@
+# "desktop/prebuilt/multipose/modules/multi_pose_detection_gpu.pbtxt"
+# https://github.com/61315/mediapipe-prebuilt/tree/master/src/desktop/multipose/
+#
+# MediaPipe graph that performs pose tracking with TensorFlow Lite on GPU.
+
+input_stream: "input_video"
+
+output_stream: "output_video"
+
+output_stream: "pose_detections"
+
+node {
+  calculator: "FlowLimiterCalculator"
+  input_stream: "input_video"
+  input_stream: "FINISHED:output_video"
+  input_stream_info: {
+    tag_index: "FINISHED"
+    back_edge: true
+  }
+  output_stream: "throttled_input_video"
+}
+
+node {
+  calculator: "MultiPoseLandmarkGpu"
+  input_stream: "IMAGE:throttled_input_video"
+  output_stream: "DETECTIONS:pose_detections"
+  output_stream: "detections_render_data"
+  output_stream: "roi_render_data_list"
+  output_stream: "landmarks_render_data_list"
+}
+
+node {
+  calculator: "AnnotationOverlayCalculator"
+  input_stream: "IMAGE_GPU:throttled_input_video"
+  input_stream: "detections_render_data"
+  input_stream: "VECTOR:0:roi_render_data_list"
+  input_stream: "VECTOR:1:landmarks_render_data_list"
+  output_stream: "IMAGE_GPU:output_video"
+}

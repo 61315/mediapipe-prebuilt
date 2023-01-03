@@ -1,0 +1,339 @@
+# "ios/prebuilt/multipose/modules/multi_pose_landmark_gpu.pbtxt"
+# https://github.com/61315/mediapipe-prebuilt/tree/master/src/ios/multipose/
+#
+# MediaPipe graph to detect/predict pose landmarks. (GPU input, and inference is
+# executed on GPU.)
+
+type: "MultiPoseLandmarkGpu"
+
+input_stream: "IMAGE:image"
+
+output_stream: "MULTI_LANDMARKS:multi_pose_landmarks"
+
+output_stream: "MULTI_WORLD_LANDMARKS:multi_pose_world_landmarks"
+
+output_stream: "DETECTIONS:pose_detections"
+
+output_stream: "POSE_ROIS_FROM_LANDMARKS:pose_rects_from_landmarks"
+
+output_stream: "POSE_ROIS_FROM_DETECTIONS:pose_rects_from_detections"
+
+output_stream: "detections_render_data"
+
+output_stream: "roi_render_data_list"
+
+output_stream: "landmarks_render_data_list"
+
+node {
+  calculator: "ConstantSidePacketCalculator"
+  output_side_packet: "PACKET:0:use_prev_landmarks"
+  output_side_packet: "PACKET:1:enable_segmentation"
+  output_side_packet: "PACKET:2:model_complexity"
+  output_side_packet: "PACKET:3:smooth_landmarks"
+  output_side_packet: "PACKET:4:num_poses"
+  node_options: {
+    [type.googleapis.com/mediapipe.ConstantSidePacketCalculatorOptions]: {
+      packet { bool_value: true }
+      packet { bool_value: false }
+      packet { int_value: 0 }
+      packet { bool_value: false }
+      packet { int_value: 2 }
+    }
+  }
+}
+
+node {
+  calculator: "GateCalculator"
+  input_side_packet: "ALLOW:use_prev_landmarks"
+  input_stream: "prev_pose_rects_from_landmarks"
+  output_stream: "gated_prev_pose_rects_from_landmarks"
+  options: {
+    [mediapipe.GateCalculatorOptions.ext] {
+      allow: true
+    }
+  }
+}
+
+node {
+  calculator: "NormalizedRectVectorHasMinSizeCalculator"
+  input_stream: "ITERABLE:gated_prev_pose_rects_from_landmarks"
+  input_side_packet: "num_poses"
+  output_stream: "prev_has_enough_poses"
+}
+
+node {
+  calculator: "GateCalculator"
+  input_stream: "image"
+  input_stream: "DISALLOW:prev_has_enough_poses"
+  output_stream: "pose_detection_image"
+  options: {
+    [mediapipe.GateCalculatorOptions.ext] {
+      empty_packets_as_allow: true
+    }
+  }
+}
+
+node {
+  calculator: "MultiPoseDetectionGpu"
+  input_stream: "IMAGE:pose_detection_image"
+  output_stream: "DETECTIONS:all_pose_detections"
+}
+
+node {
+  calculator: "ClipDetectionVectorSizeCalculator"
+  input_stream: "all_pose_detections"
+  output_stream: "pose_detections"
+  input_side_packet: "num_poses"
+}
+
+node {
+  calculator: "DetectionsToRenderDataCalculator"
+  input_stream: "DETECTIONS:pose_detections"
+  output_stream: "RENDER_DATA:detections_render_data"
+  node_options: {
+    [type.googleapis.com/mediapipe.DetectionsToRenderDataCalculatorOptions] {
+      thickness: 1.0
+      color { r: 0 g: 255 b: 0 }
+    }
+  }
+}
+
+node {
+  calculator: "ImagePropertiesCalculator"
+  input_stream: "IMAGE_GPU:pose_detection_image"
+  output_stream: "SIZE:pose_detection_image_size"
+}
+
+node {
+  calculator: "BeginLoopDetectionCalculator"
+  input_stream: "ITERABLE:pose_detections"
+  input_stream: "CLONE:pose_detection_image_size"
+  output_stream: "ITEM:pose_detection"
+  output_stream: "CLONE:image_size_for_poses"
+  output_stream: "BATCH_END:pose_detections_timestamp"
+}
+
+node {
+  calculator: "PoseDetectionToRoi"
+  input_stream: "DETECTION:pose_detection"
+  input_stream: "IMAGE_SIZE:image_size_for_poses"
+  output_stream: "ROI:pose_rect_from_pose_detection"
+}
+
+node {
+  name: "EndLoopForPoseDetections"
+  calculator: "EndLoopNormalizedRectCalculator"
+  input_stream: "ITEM:pose_rect_from_pose_detection"
+  input_stream: "BATCH_END:pose_detections_timestamp"
+  output_stream: "ITERABLE:pose_rects_from_pose_detections"
+}
+
+node {
+  calculator: "AssociationNormRectCalculator"
+  input_stream: "pose_rects_from_pose_detections"
+  input_stream: "gated_prev_pose_rects_from_landmarks"
+  output_stream: "pose_rects"
+  options: {
+    [mediapipe.AssociationCalculatorOptions.ext] {
+      min_similarity_threshold: 0.66
+    }
+  }
+}
+
+node {
+  calculator: "ImagePropertiesCalculator"
+  input_stream: "IMAGE_GPU:image"
+  output_stream: "SIZE:image_size"
+}
+
+node {
+  calculator: "BeginLoopNormalizedRectCalculator"
+  input_stream: "ITERABLE:pose_rects"
+  input_stream: "CLONE:0:image"
+  input_stream: "CLONE:1:image_size"
+  output_stream: "ITEM:single_pose_rect"
+  output_stream: "CLONE:0:image_for_landmarks"
+  output_stream: "CLONE:1:image_size_for_landmarks"
+  output_stream: "BATCH_END:pose_rects_timestamp"
+}
+
+node {
+  calculator: "PoseLandmarkByRoiGpu"
+  input_side_packet: "MODEL_COMPLEXITY:model_complexity"
+  input_side_packet: "ENABLE_SEGMENTATION:enable_segmentation"
+  input_stream: "IMAGE:image_for_landmarks"
+  input_stream: "ROI:single_pose_rect"
+  output_stream: "LANDMARKS:pose_landmarks"
+  output_stream: "AUXILIARY_LANDMARKS:auxiliary_landmarks"
+  output_stream: "WORLD_LANDMARKS:pose_world_landmarks"
+}
+
+node {
+  calculator: "PoseLandmarksToRoi"
+  input_stream: "LANDMARKS:auxiliary_landmarks"
+  input_stream: "IMAGE_SIZE:image_size_for_landmarks"
+  output_stream: "ROI:single_pose_rect_from_landmarks"
+}
+
+node {
+  calculator: "RectToRenderDataCalculator"
+  input_stream: "NORM_RECT:single_pose_rect_from_landmarks"
+  output_stream: "RENDER_DATA:roi_render_data"
+  node_options: {
+    [type.googleapis.com/mediapipe.RectToRenderDataCalculatorOptions] {
+      filled: false
+      color { r: 255 g: 0 b: 0 }
+      thickness: 2.0
+    }
+  }
+}
+
+node {
+  calculator: "RectToRenderScaleCalculator"
+  input_stream: "NORM_RECT:single_pose_rect_from_landmarks"
+  input_stream: "IMAGE_SIZE:image_size_for_landmarks"
+  output_stream: "RENDER_SCALE:render_scale"
+  node_options: {
+    [type.googleapis.com/mediapipe.RectToRenderScaleCalculatorOptions] {
+      multiplier: 0.0012
+    }
+  }
+}
+
+node {
+  calculator: "LandmarksToRenderDataCalculator"
+  input_stream: "NORM_LANDMARKS:pose_landmarks"
+  input_stream: "RENDER_SCALE:render_scale"
+  output_stream: "RENDER_DATA:landmarks_render_data"
+  node_options: {
+    [type.googleapis.com/mediapipe.LandmarksToRenderDataCalculatorOptions] {
+      landmark_connections: 0
+      landmark_connections: 1
+      landmark_connections: 1
+      landmark_connections: 2
+      landmark_connections: 2
+      landmark_connections: 3
+      landmark_connections: 3
+      landmark_connections: 7
+      landmark_connections: 0
+      landmark_connections: 4
+      landmark_connections: 4
+      landmark_connections: 5
+      landmark_connections: 5
+      landmark_connections: 6
+      landmark_connections: 6
+      landmark_connections: 8
+      landmark_connections: 9
+      landmark_connections: 10
+      landmark_connections: 11
+      landmark_connections: 12
+      landmark_connections: 11
+      landmark_connections: 13
+      landmark_connections: 13
+      landmark_connections: 15
+      landmark_connections: 15
+      landmark_connections: 17
+      landmark_connections: 15
+      landmark_connections: 19
+      landmark_connections: 15
+      landmark_connections: 21
+      landmark_connections: 17
+      landmark_connections: 19
+      landmark_connections: 12
+      landmark_connections: 14
+      landmark_connections: 14
+      landmark_connections: 16
+      landmark_connections: 16
+      landmark_connections: 18
+      landmark_connections: 16
+      landmark_connections: 20
+      landmark_connections: 16
+      landmark_connections: 22
+      landmark_connections: 18
+      landmark_connections: 20
+      landmark_connections: 11
+      landmark_connections: 23
+      landmark_connections: 12
+      landmark_connections: 24
+      landmark_connections: 23
+      landmark_connections: 24
+      landmark_connections: 23
+      landmark_connections: 25
+      landmark_connections: 24
+      landmark_connections: 26
+      landmark_connections: 25
+      landmark_connections: 27
+      landmark_connections: 26
+      landmark_connections: 28
+      landmark_connections: 27
+      landmark_connections: 29
+      landmark_connections: 28
+      landmark_connections: 30
+      landmark_connections: 29
+      landmark_connections: 31
+      landmark_connections: 30
+      landmark_connections: 32
+      landmark_connections: 27
+      landmark_connections: 31
+      landmark_connections: 28
+      landmark_connections: 32
+
+      landmark_color { r: 255 g: 0 b: 255 }
+      connection_color { r: 255 g: 255 b: 255 }
+      thickness: 1.0
+      visualize_landmark_depth: true
+      max_depth_circle_thickness: 4.0
+      min_depth_line_color: { r: 127 g: 127 b: 127 }
+      utilize_visibility: true
+      visibility_threshold: 0.75
+      utilize_presence: true
+      presence_threshold: 0.75
+    }
+  }
+}
+
+node {
+  calculator: "EndLoopRenderDataCalculator"
+  input_stream: "ITEM:roi_render_data"
+  input_stream: "BATCH_END:pose_rects_timestamp"
+  output_stream: "ITERABLE:roi_render_data_list"
+}
+
+node {
+  calculator: "EndLoopRenderDataCalculator"
+  input_stream: "ITEM:landmarks_render_data"
+  input_stream: "BATCH_END:pose_rects_timestamp"
+  output_stream: "ITERABLE:landmarks_render_data_list"
+}
+
+node {
+  calculator: "EndLoopNormalizedLandmarkListVectorCalculator"
+  input_stream: "ITEM:pose_landmarks"
+  input_stream: "BATCH_END:pose_rects_timestamp"
+  output_stream: "ITERABLE:multi_pose_landmarks"
+}
+
+node {
+  calculator: "EndLoopLandmarkListVectorCalculator"
+  input_stream: "ITEM:pose_world_landmarks"
+  input_stream: "BATCH_END:pose_rects_timestamp"
+  output_stream: "ITERABLE:multi_pose_world_landmarks"
+}
+
+node {
+  calculator: "EndLoopNormalizedRectCalculator"
+  input_stream: "ITEM:single_pose_rect_from_landmarks"
+  input_stream: "BATCH_END:pose_rects_timestamp"
+  output_stream: "ITERABLE:pose_rects_from_landmarks"
+}
+
+node {
+  calculator: "PreviousLoopbackCalculator"
+  input_stream: "MAIN:image"
+  input_stream: "LOOP:pose_rects_from_landmarks"
+  input_stream_info: {
+    tag_index: "LOOP"
+    back_edge: true
+  }
+  output_stream: "PREV_LOOP:prev_pose_rects_from_landmarks"
+}
