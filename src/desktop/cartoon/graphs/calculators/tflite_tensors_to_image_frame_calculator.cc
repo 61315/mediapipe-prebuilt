@@ -232,29 +232,38 @@ absl::Status TfLiteTensorsToImageFrameCalculator::ProcessCpu(
       << "The size of std::vector<TfLiteTensor> should be 1.";
 
   const TfLiteTensor tensor = input_tensors[0];
-  const int32 depth = tensor_channels_;
-  const int32 output_width = tensor_width_, output_height = tensor_height_;
-  const int32 total_size = output_height * output_width * depth;
+  const float* raw_input_data = tensor.data.f;
+  
+  const int output_width = tensor_width_, output_height = tensor_height_;
+  const int depth = 4;
+  const int total_size = output_height * output_width * depth;
+  const auto format = ImageFormat::SRGBA;
 
-  auto format = (depth == 1 ? ImageFormat::GRAY8 : ImageFormat::SRGB);
+  std::unique_ptr<uint8_t[]> buffer(new uint8_t[total_size]);
+  
+  // Convert [-1.0, 1.0] float values to [0.0, 255.0].
+  auto scale_and_clamp = [](const auto a) {
+    float b = 127.5 * (a + 1);
+    if (b < 0) b = 0;
+    if (b > 255) b = 255;
+    return b;
+  };
+
+  size_t pos = 0;
+
+  // Map three channel (RGB) float data to four channel (RGBA) uint8 data.
+  for (int i = 0; i < total_size; i += 4) {
+    buffer[i + 0] = static_cast<uchar>(scale_and_clamp(raw_input_data[pos++]));
+    buffer[i + 1] = static_cast<uchar>(scale_and_clamp(raw_input_data[pos++]));
+    buffer[i + 2] = static_cast<uchar>(scale_and_clamp(raw_input_data[pos++]));
+    buffer[i + 3] = static_cast<uchar>(scale_and_clamp(1)); // Set alpha to max
+  }
 
   ::std::unique_ptr<const ImageFrame> output;
-
-  std::unique_ptr<uint8_t[]> buffer(
-      new (std::align_val_t(32)) uint8_t[total_size]);
-  for (int i = 0; i < total_size; ++i) {
-    float d = (scale_factor_ / 2) * (tensor.data.f[i] + 1);
-    if (d < 0) d = 0;
-    if (d > 255) d = 255;
-    buffer[i] = d;
-  }
   
   output = ::absl::make_unique<ImageFrame>(
       format, output_width, output_height, output_width * depth, buffer.release(),
-      [total_size](uint8* ptr) {
-        ::operator delete[](ptr, total_size,
-                            std::align_val_t(32));
-      });
+      [total_size](uint8* ptr) { ::operator delete[](ptr, total_size); });
 
   cc->Outputs().Tag(kImageTag).Add(output.release(), cc->InputTimestamp());
 
