@@ -1,0 +1,28 @@
+// "ios/prebuilt/facades/graphs/calculators/tflite_tensors_to_image_frame_calculator.proto"
+// https://github.com/61315/mediapipe-prebuilt/tree/master/src/ios/facades
+
+syntax = "proto2";
+
+package mediapipe;
+
+import "mediapipe/framework/calculator.proto";
+
+message TfLiteTensorsToImageFrameCalculatorOptions {
+  extend mediapipe.CalculatorOptions {
+    // No discernible way to derive a new enum value.
+    // Below is just `TfLiteTensorsToSegmentationCalculatorOptions.ext` + 1.
+    optional TfLiteTensorsToImageFrameCalculatorOptions ext = 252526027;
+  }
+
+  // Dimensions of input bitmap tensor to process.
+  optional int32 tensor_width = 1;     // required
+  optional int32 tensor_height = 2;    // required
+  optional int32 tensor_channels = 3;  // required
+
+  // Flip result image mask along y-axis.
+  optional bool flip_vertically = 4;
+
+  // Multiples floating point tensor outputs by this value before converting to
+  // uint8. This is useful for converting from range [0, 1] to [0, 255]
+  optional float scale_factor = 5 [default = 1.0];
+}
